@@ -104,6 +104,15 @@ pearCoefs <- function(dataframe,threshold = NULL){
 #########################################
 ### Part 3 and 4.
 
+# function: multiplot
+# This is a helper function that displays multiple plots on the same graph.
+# This function is called in the function plotNumericGrid()
+# Input: ...
+#       plotlist
+#        file
+#        cols
+#        layout
+# Prints multiple plots on the same graph to the screen.
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   
   # Make a list from the ... arguments and plotlist
@@ -139,8 +148,13 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
-#######
-
+# function: plotNumericOn
+# This is a helper function which is called in plotOn.
+# This function deals with the case the plot switch in the main function explore()
+# is set to "on". This function only deals with the numeric variables in the given dataframe.
+# Input: dataframe, the data frame that we are using
+#        binVector, a vector containing one or more integers that represent the
+#                   the number of bins to use for a histogram. If not provided, use default.
 plotNumericOn <- function(dataframe,binVector=NULL){
   numericData <- dataframe[sapply(dataframe,is.numeric)]
   if(!is.null(binVector)){ # if binVector is not NULL
@@ -199,8 +213,13 @@ plotNumericOn <- function(dataframe,binVector=NULL){
   }
 }
 
-#
-
+# function: plotNumericGrid
+# This is a helper function which is called in plotGrid.
+# This function deals with the case the plot switch in the main function explore()
+# is set to "grid". This function only deals with the numeric variables in the given dataframe.
+# Input: dataframe, the data frame that we are using
+#        binVector, a vector containing one or more integers that represent the
+#                   the number of bins to use for a histogram. If not provided, use default.
 plotNumericGrid <- function(dataframe, binVector=NULL){
   numericData <- dataframe[sapply(dataframe,is.numeric)] 
   if (is.null(binVector)){ # if binVector is null
@@ -251,25 +270,26 @@ plotNumericGrid <- function(dataframe, binVector=NULL){
   }
 }
 
+# function: is.binary
+# This is a helper function that is called in plotCat().
+# This is a boolean function that determins wheter a given vector is binary.
+# Input: vector, a vector
+# output: True, if the vector is binary
+#         False, if the vector is not binary
 is.binary <- function(vector) {
-  #This function will be used in the function plot_gray.
-  #This function can tell whether the vector is a binary vector
-  
-  #Parameter: a vector
-  
-  #Returns: TRUE if the vector is binary, FALSE else
   x <- unique(vector)                    
   #x contains all unique values in v
   length(x) - sum(is.na(x)) == 2L         
   #check to see if x only contains 2 distinct values
 }
 
-
+# function: plotCat
+# This is a helper function which is called in plotOn() and plotGrid().
+# This function deals with the case the plot switch in the main function explore()
+# is set to "on" or "grid". This function only deals with the categorical,logical and binary variables in the given dataframe.
+# Input: dataframe, the data frame that we are using
 plotCat <- function(dataframe) {
-  facData <- dataframe[,sapply(dataframe,is.factor)]
-  logData <- dataframe[,sapply(dataframe,is.logical)] 
-  binData <- dataframe[,sapply(dataframe,is.binary)]
-  flbData <- data.frame(facData,logData,binData)
+  flbData <- data[,sapply(data,is.factor)|sapply(data,is.logical)|sapply(data,is.binary)]
   for(i in 1:ncol(flbData)){
     p <- ggplot(dataframe,aes(x=flbData[,i]))+
       geom_bar(fill='gray')+
@@ -277,6 +297,7 @@ plotCat <- function(dataframe) {
     print(p)
   }
 }
+
 # function: plotOn
 # This is a helper function dealing with part 3 and 4 in the project.
 # This is the function called directly in explore().
@@ -339,4 +360,93 @@ explore <- function(dataframe, plot="off", threshold=NULL, bins=NULL){
 ### Exceptions and defensive codes
 #########################################
 
+# Possible problem: When testing data frames, the R built-in functions is.logical and is.factor 
+# sometimes do not recognize factors with characters.
+# New Function: clean_Data
+# This function take in a dataframe and transfers all the non-numeric variable to categorical variable
+clean_data <- function(dataframe){
+  for (i in 1:ncol(dataframe)){
+    if (!is.numeric(dataframe[[i]])){
+      dataframe[i] <- data.frame(as.factor(dataframe[[i]]))
+    }
+  }
+  return(dataframe)
+}
 
+# Possible problem: The threshold may not be a number between 0 and 1.
+# New Function: is.threshold.valid
+# Check if the threshold input is valid
+# Input: threshold, anything to check for the threshold
+# Output: TRUE, if the input is valid as described
+#         FALSE, otherwise
+is.threshold.valid <- function(threshold){
+  return(is.numeric(threshold) & threshold >= 0 & threshold <=1)
+}
+
+# Possible problem: The bins may consist of something not be a number, not be an integer, or not greater than 0.
+# New Function: is.bins.valid
+# Check if the bins input is valid
+# Input: bins, anything to check for the threshold
+# Output: TRUE, if the input is valid as described
+#         FALSE, otherwise
+is.bins.valid <- function(bins){
+  result <- TRUE
+  if (!is.vector(bins)){
+    result <- FALSE
+  }
+  else {
+    if (!is.numeric(bins)){
+       result <- FALSE
+     }
+    else{
+      for (i in 1:length(bins)){
+        if ((!bins[i] == round (bins[i])) || (bins[i] <= 0)){
+          result <- FALSE
+        }
+      }
+    }
+  }
+  return (result)
+}
+
+# Other possible problems:
+# - The first input is not a data frame class.
+# - The plot switch is turned to something other than "off","on", or "grid".
+# All problems are dealt with in this new improve_explore function.
+improve_explore <- function(dataframe,plot = 'off', threshold = 0, vector = NULL){
+  # this function is the improvement of explore()
+  
+  dataframe <- na.omit(dataframe) #cancel the whole line if there is NA exist
+  
+  if(!is.data.frame(dataframe)){                 
+    dataframe <- as.data.frame(dataframe)  #if it is not dataframe, transfer it into dataframe
+  }
+  
+  #dataframe <- clean_data(dataframe) #Make sure that all the non-numeric variables now have class "factor"
+  # This function still needs improvement.
+  
+  while(plot != "off" && plot != "on" && plot != "grid"){   #Check to see if plot is valid input, if not, input until valid plot
+    print("invalid input for plot")
+    plot <- readline(prompt="Enter your option(off / on / grid): ")  #re-enter the input
+  }
+  
+  while(!is.threshold.valid(threshold) ){    #check to see if threshold is a valid input,if not, input until valid threshold
+    print("correlation threshold must be numeric and in range [0,1]")
+    threshold <- as.numeric(readline(prompt="Enter your correlation threshold: "))   #re-enter the threshold
+  }
+  
+  if(!is.null(bins)){
+    if(!is.bins.valid(bins)){ #check if bin vector is all numeric and all not less than 0
+      print("the bins vector must positive integers, please enter new bins one by one and press 'return' at last to finish input")
+      bins <- c()
+      bin <- 1
+      while(bin != ""){  #input "return"  to finish loop
+        bin <- readline(prompt="Enter the number of bins: ")->bin1
+        bin1 <- as.numeric(bin1)
+        bins <- c(bins, bin1)
+      }#re-enter the bin vector
+      bins <- na.omit(bins) #cancel the NA
+    }
+  }
+  return(explore(dataframe,plot,threshold,vector))
+}
