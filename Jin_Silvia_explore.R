@@ -4,6 +4,9 @@
 ## Jin_Silvia_explore.R
 #########################
 
+##Prof G - Nice work. The only small issue
+##Prof G - is that the factor bar graphs did
+##Prof G - not plot on a grid.
 
 #########################################
 ### Part 1.
